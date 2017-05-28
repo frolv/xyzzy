@@ -1,5 +1,5 @@
 #
-# xyzzy/bot.py
+# xyzzy/matrix_bot.py
 # Copyright (C) 2017 Alexei Frolov
 #
 # This program is free software: you can redistribute it and/or modify
@@ -19,15 +19,26 @@
 from matrix_client.client import MatrixClient
 from matrix_client.api import MatrixRequestError
 
+from . import plugin
+from plugins.info import InfoPlugin
+from plugins.interject import InterjectPlugin
+
 DEFAULT_MATRIX_SERVER = 'https://matrix.org'
 
 class MatrixBot:
     COMMAND_PREFIX = ','
+    BOT_PLUGINS = [
+        InfoPlugin,
+        InterjectPlugin
+    ]
 
     def __init__(self, username):
         self.username = username
         self.client = MatrixClient(DEFAULT_MATRIX_SERVER)
         self.plugins = {}
+
+        for plugin in MatrixBot.BOT_PLUGINS:
+            self.plugins[plugin.PLUGIN_COMMAND] = plugin()
 
 
     def register(self, password):
@@ -96,7 +107,7 @@ class MatrixBot:
 
                 if argv[0] in self.plugins:
                     response = self.plugins[argv[0]].run(argv)
-                    if respose['type'] == 'text':
+                    if response['type'] == 'text':
                         room.send_text(response['content'])
 
 

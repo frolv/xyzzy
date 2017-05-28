@@ -22,12 +22,25 @@ import argparse, os, sys
 from stat import *
 
 from xyzzy.pwgen import pwgen
+from xyzzy.matrix_bot import MatrixBot
 
 PROGRAM_NAME = 'xyzzy'
 CONFIG_FILE = '%src' % PROGRAM_NAME
 
 
 def setup(prog, config_path):
+    path = config_path if config_path else './.%s' % CONFIG_FILE
+    try:
+        os.stat(path)
+        print("Warning: `%s' already exists and will be overwritten" % path)
+        if input('Continue? [y/n] ').lower() != 'y':
+            return 0
+    except EOFError:
+        print('')
+        return 0
+    except FileNotFoundError:
+        pass
+
     print('Creating a new Matrix account for %s' % PROGRAM_NAME)
     try:
         username = input('Enter a username: ')
@@ -39,12 +52,17 @@ def setup(prog, config_path):
         print('%s: invalid username provided' % prog, file=sys.stderr)
         return 1
 
-    path = config_path if config_path else './.%s' % CONFIG_FILE
     password = pwgen()
 
     if not password:
         print('%s: could not generate password' % prog, file=sys.stderr)
         return 1
+
+    xyzzy = MatrixBot(username)
+    try:
+        xyzzy.register(password)
+    except MatrixBot.RegistrationError:
+        print('%s: failed to register Matrix account' % prog, file=sys.stderr)
 
     try:
         f = open(path, 'w')
@@ -60,7 +78,7 @@ def setup(prog, config_path):
 
 
 def get_settings(path):
-    config_keys = ['user', 'pass']
+    config_keys = ['user', 'pass', 'rooms']
     settings = {}
 
     for k in config_keys:
@@ -83,7 +101,10 @@ def get_settings(path):
                   file=sys.stderr)
             continue
 
-        settings[tokens[0]] = tokens[1]
+        if tokens[0] == 'rooms':
+            settings[tokens[0]] = tokens[1].split(',')
+        else:
+            settings[tokens[0]] = tokens[1]
 
     f.close()
     return settings
@@ -133,11 +154,11 @@ def read_config(prog, config_path):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='A Matrix bot')
+    parser = argparse.ArgumentParser(description='A Matrix chat bot')
     parser.add_argument('-f', '--file', type=str,
                         help='use FILE as the config file')
     parser.add_argument('--setup', action='store_true',
-                        help='create a new config file')
+                        help='create a new Matrix account for the bot')
 
     args = parser.parse_args()
 
@@ -148,4 +169,18 @@ if __name__ == '__main__':
     if settings is None:
         exit(1)
 
-    print(settings)
+    rooms = settings['rooms'] or []
+
+    xyzzy = MatrixBot(settings['user'])
+    try:
+        xyzzy.login(settings['pass'])
+        for room in rooms:
+            try:
+                xyzzy.join_room(room)
+            except MatrixBot.RoomError as e:
+                print('%s: %s: %s' % (sys.argv[0], room, e), file=sys.stderr)
+    except MatrixBot.InvalidLoginError:
+        print('%s: invalid username or password' % sys.argv[0], file=sys.stderr)
+        exit(1)
+
+    xyzzy.listen()

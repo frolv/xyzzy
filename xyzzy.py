@@ -27,7 +27,7 @@ PROGRAM_NAME = 'xyzzy'
 CONFIG_FILE = '%src' % PROGRAM_NAME
 
 
-def setup(config_path):
+def setup(prog, config_path):
     print('Creating a new Matrix account for %s' % PROGRAM_NAME)
     try:
         username = input('Enter a username: ')
@@ -35,8 +35,16 @@ def setup(config_path):
         print('')
         return 0
 
+    if not username:
+        print('%s: invalid username provided' % prog, file=sys.stderr)
+        return 1
+
     path = config_path if config_path else './.%s' % CONFIG_FILE
     password = pwgen()
+
+    if not password:
+        print('%s: could not generate password' % prog, file=sys.stderr)
+        return 1
 
     try:
         f = open(path, 'w')
@@ -134,7 +142,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.setup:
-        exit(setup(args.file))
+        exit(setup(sys.argv[0], args.file))
 
     settings = read_config(sys.argv[0], args.file)
     if settings is None:

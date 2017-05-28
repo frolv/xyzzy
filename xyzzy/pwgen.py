@@ -16,5 +16,25 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import subprocess, shutil, sys
+
+DEFAULT_PASSWORD_LENGTH = 32
+
 def pwgen():
-    return 'itsgnuslashlinux'
+    pwgen_path = shutil.which('pwgen')
+    if not pwgen_path:
+        return pwgen_insecure()
+
+    argv = [pwgen_path, '-ncsy', str(DEFAULT_PASSWORD_LENGTH), '1']
+    try:
+        password = subprocess.check_output(argv).rstrip().decode()
+    except subprocess.CalledProcessError:
+        password = None
+
+    return password
+
+def pwgen_insecure():
+    # TODO: use some other algorithm
+    print("You do not have `pwgen' installed. Cannot generate password.",
+          file=sys.stderr)
+    exit(1)

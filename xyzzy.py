@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 #
+# xyzzy.py
 # Copyright (C) 2017 Alexei Frolov
 #
 # This program is free software: you can redistribute it and/or modify
@@ -20,6 +21,8 @@
 import argparse, os, sys
 from stat import *
 
+from xyzzy.pwgen import pwgen
+
 PROGRAM_NAME = 'xyzzy'
 CONFIG_FILE = '%src' % PROGRAM_NAME
 
@@ -33,7 +36,7 @@ def setup(config_path):
         return 0
 
     path = config_path if config_path else './.%s' % CONFIG_FILE
-    password = 'hunter2'
+    password = pwgen()
 
     try:
         f = open(path, 'w')
@@ -62,7 +65,7 @@ def get_settings(path):
         return None
 
     for lineno, line in enumerate(f, 1):
-        tokens = line.strip().split('=')
+        tokens = line.strip().split('=', 1)
 
         if len(tokens) != 2:
             print('%s:%d: invalid syntax' % (path, lineno), file=sys.stderr)

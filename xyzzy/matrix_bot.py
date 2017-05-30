@@ -19,6 +19,8 @@
 from matrix_client.client import MatrixClient
 from matrix_client.api import MatrixRequestError
 
+from markdown import markdown
+
 from . import plugin
 from plugins.info import InfoPlugin
 from plugins.interject import InterjectPlugin
@@ -88,7 +90,8 @@ class MatrixBot:
                 break
 
     def event_listener(self, room, event):
-        import subprocess
+        """ Matrix event callback """
+
         print(event)
         if event['type'] == 'm.room.message':
             if event['content']['msgtype'] == 'm.text':
@@ -109,6 +112,10 @@ class MatrixBot:
                     response = self.plugins[argv[0]].run(argv)
                     if response['type'] == 'text':
                         room.send_text(response['content'])
+                    elif response['type'] == 'markdown':
+                        html = markdown(response['content'],
+                                        extensions=['markdown.extensions.fenced_code'])
+                        room.send_html(html, response['content'])
 
 
     def split_string(self, s):

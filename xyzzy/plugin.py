@@ -21,5 +21,10 @@ class Plugin:
     PLUGIN_COMMAND = ''
 
     def run(self, argv):
-        """ Main plugin function called when a command is received """
+        """
+        Main plugin function called when a command is received
+        Returns a response dictionary containing two fields:
+            'type': content type - either 'text' or 'markdown'
+            'content': the message to send as a response
+        """
         pass

@@ -110,6 +110,8 @@ class MatrixBot:
 
                 if argv[0] in self.plugins:
                     response = self.plugins[argv[0]].run(argv)
+                    if not response['content']:
+                        return
                     if response['type'] == 'text':
                         room.send_text(response['content'])
                     elif response['type'] == 'markdown':

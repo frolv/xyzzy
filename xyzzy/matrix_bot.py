@@ -96,7 +96,7 @@ class MatrixBot:
         if event['type'] == 'm.room.message':
             if event['content']['msgtype'] == 'm.text':
                 msg = event['content']['body']
-                if msg[0] != MatrixBot.COMMAND_PREFIX:
+                if not msg or msg[0] != MatrixBot.COMMAND_PREFIX:
                     return
 
                 try:

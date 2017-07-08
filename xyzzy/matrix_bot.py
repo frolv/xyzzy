@@ -45,6 +45,7 @@ class MatrixBot:
         self.client = MatrixClient(DEFAULT_MATRIX_SERVER)
         self.active_plugins = {}
         self.passive_plugins = []
+        self.redaction_warning = False
 
         for plugin in MatrixBot.ACTIVE_BOT_PLUGINS:
             self.active_plugins[plugin.PLUGIN_COMMAND] = plugin()
@@ -156,7 +157,12 @@ class MatrixBot:
         )
 
         content = { 'reason': 'Sed correction' }
-        room.client.api._send('PUT', path, content, {}, {})
+        try:
+            room.client.api._send('PUT', path, content, {}, {})
+        except MatrixRequestError as e:
+            if e.code == 403 and not self.redaction_warning:
+                room.send_text('insufficent permission to redact messages')
+                self.redaction_warning = True
 
     class RegistrationError(Exception):
         pass

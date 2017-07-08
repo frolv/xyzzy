@@ -55,7 +55,7 @@ class SedPlugin(Plugin):
 
     def parse_sed(self, arguments, replace_event):
         return re.sub(self._groups[1], self._groups[2],
-                      replace_event['content']['body'], 
+                      replace_event['content']['body'],
                       0 if self._groups[3] == 'g' else 1)
 
 

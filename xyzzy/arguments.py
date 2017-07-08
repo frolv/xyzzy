@@ -22,12 +22,15 @@ class Arguments:
 
     def __init__(self, raw_input, room=None, event=None, matrix_bot=None):
         self.raw = raw_input
-        self.argv = self.split_string(raw_input)
         self.room = room
         self.current_event = event
         self.matrix_bot = matrix_bot
 
-    def split_string(self, s):
+    def parse_argv(self):
+        self.argv = self._split_string(self.raw)
+        return self.argv
+
+    def _split_string(self, s):
         argv = []
         argc = 0
         i = 0
@@ -35,7 +38,7 @@ class Arguments:
         arg = []
         while i < len(s):
             if s[i] == "'" or s[i] == '"' or s[i] == '`':
-                i += self.read_quoted(s, arg, i)
+                i += self._read_quoted(s, arg, i)
                 # print('after read quoted s[i] = "%s"' % s[i])
             elif s[i] == '\\':
                 arg.append(s[i + 1] if i + 1 < len(s) else s[i])
@@ -52,7 +55,7 @@ class Arguments:
 
         return argv
 
-    def read_quoted(self, s, arg, i):
+    def _read_quoted(self, s, arg, i):
         quote = s[i]
         start = i
         i += 1
@@ -76,7 +79,9 @@ class Arguments:
             arg.append(quote)
 
         if i == len(s):
-            raise MatrixBot.UnterminatedQuoteError()
+            raise Arguments.UnterminatedQuoteError()
 
         return i - start + 1
 
+    class UnterminatedQuoteError(Exception):
+        pass

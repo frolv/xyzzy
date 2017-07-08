@@ -129,7 +129,9 @@ class MatrixBot:
 
                 try:
                     args = arguments.Arguments(trimmed_message, room, event, self)
-                except MatrixBot.UnterminatedQuoteError:
+                    if has_prefix:
+                        args.parse_argv()
+                except arguments.Arguments.UnterminatedQuoteError:
                     room.send_text('error: unterminated quote')
                     return
 
@@ -163,7 +165,4 @@ class MatrixBot:
         pass
 
     class RoomError(Exception):
-        pass
-
-    class UnterminatedQuoteError(Exception):
         pass

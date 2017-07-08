@@ -22,25 +22,34 @@ from matrix_client.api import MatrixRequestError
 from markdown import markdown
 
 from . import plugin
+from . import arguments
 from plugins.info import InfoPlugin
 from plugins.interject import InterjectPlugin
+from plugins.sed import SedPlugin
 
 DEFAULT_MATRIX_SERVER = 'https://matrix.org'
 
 class MatrixBot:
     COMMAND_PREFIX = ','
-    BOT_PLUGINS = [
+    ACTIVE_BOT_PLUGINS = [
         InfoPlugin,
         InterjectPlugin
+    ]
+    PASSIVE_BOT_PLUGINS = [
+        SedPlugin
     ]
 
     def __init__(self, username):
         self.username = username
         self.client = MatrixClient(DEFAULT_MATRIX_SERVER)
-        self.plugins = {}
+        self.active_plugins = {}
+        self.passive_plugins = []
 
-        for plugin in MatrixBot.BOT_PLUGINS:
-            self.plugins[plugin.PLUGIN_COMMAND] = plugin()
+        for plugin in MatrixBot.ACTIVE_BOT_PLUGINS:
+            self.active_plugins[plugin.PLUGIN_COMMAND] = plugin()
+
+        for plugin in MatrixBot.PASSIVE_BOT_PLUGINS:
+            self.passive_plugins.append(plugin())
 
 
     def register(self, password):
@@ -89,6 +98,17 @@ class MatrixBot:
             except EOFError:
                 break
 
+    def handle_response(self, response, room):
+        if response:
+            if not response['content']:
+                return
+            if response['type'] == 'text':
+                room.send_text(response['content'])
+            elif response['type'] == 'markdown':
+                html = markdown(response['content'],
+                        extensions=['markdown.extensions.fenced_code'])
+                room.send_html(html, response['content'])
+
     def event_listener(self, room, event):
         """ Matrix event callback """
 
@@ -96,83 +116,34 @@ class MatrixBot:
         if event['type'] == 'm.room.message':
             if event['content']['msgtype'] == 'm.text':
                 msg = event['content']['body']
-                if not msg or msg[0] != MatrixBot.COMMAND_PREFIX:
+                if not msg:
                     return
 
+                has_prefix = msg[0] == MatrixBot.COMMAND_PREFIX
+
+                if has_prefix:
+                    trimmed_message = msg[1:]
+                else:
+                    trimmed_message = msg
+
                 try:
-                    argv = self.split_string(msg[1:])
+                    args = arguments.Arguments(trimmed_message, room, event)
                 except MatrixBot.UnterminatedQuoteError:
                     room.send_text('error: unterminated quote')
                     return
 
-                if not argv:
+                if not args:
                     return
 
-                if argv[0] in self.plugins:
-                    response = self.plugins[argv[0]].run(argv)
-                    if not response['content']:
-                        return
-                    if response['type'] == 'text':
-                        room.send_text(response['content'])
-                    elif response['type'] == 'markdown':
-                        html = markdown(response['content'],
-                                        extensions=['markdown.extensions.fenced_code'])
-                        room.send_html(html, response['content'])
-
-
-    def split_string(self, s):
-        argv = []
-        argc = 0
-        i = 0
-
-        arg = []
-        while i < len(s):
-            if s[i] == "'" or s[i] == '"' or s[i] == '`':
-                i += self.read_quoted(s, arg, i)
-                # print('after read quoted s[i] = "%s"' % s[i])
-            elif s[i] == '\\':
-                arg.append(s[i + 1] if i + 1 < len(s) else s[i])
-                i += 2
-            elif s[i] == ' ' or s[i] == '\t':
-                argv.append(''.join(arg))
-                arg.clear()
-                i += 1
-            else:
-                arg.append(s[i])
-                i += 1
-
-        argv.append(''.join(arg))
-
-        return argv
-
-
-    def read_quoted(self, s, arg, i):
-        quote = s[i]
-        start = i
-        i += 1
-
-        if quote == '`':
-            arg.append(quote)
-
-        while i < len(s):
-            if s[i] == quote:
-                if quote == '`':
-                    arg.append(quote)
-                break
-            elif s[i] == '\\':
-                arg.append(s[i + 1] if i + 1 < len(s) else s[i])
-                i += 2
-            else:
-                arg.append(s[i])
-                i += 1
-
-        if quote == '`':
-            arg.append(quote)
-
-        if i == len(s):
-            raise MatrixBot.UnterminatedQuoteError()
-
-        return i - start + 1
+                if has_prefix and args.argv[0] in self.active_plugins:
+                    self.handle_response(
+                            self.active_plugins[args.argv[0]].run(args), room)
+                else:
+                    for plug in self.passive_plugins:
+                        status, response = plug.accept(args)
+                        self.handle_response(response, room)
+                        if status:
+                            return
 
 
     class RegistrationError(Exception):

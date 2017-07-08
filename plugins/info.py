@@ -17,15 +17,16 @@
 #
 
 from xyzzy.plugin import Plugin
+from xyzzy.arguments import Arguments
 
 class InfoPlugin(Plugin):
     PLUGIN_COMMAND = 'info'
     GITHUB_REPO = 'https://github.com/frolv/xyzzy'
 
-    def run(self, argv):
-        if len(argv) == 1:
+    def run(self, arguments):
+        if len(arguments.argv) == 1:
             response = 'xyzzy matrix bot'
-        elif argv[1] == 'source':
+        elif arguments.argv[1] == 'source':
             response = InfoPlugin.GITHUB_REPO
         else:
             response = ''
@@ -34,3 +35,5 @@ class InfoPlugin(Plugin):
             'type': 'text',
             'content': response
         }
+
+

@@ -20,7 +20,7 @@ class Plugin:
     """ Command which calls the plugin """
     PLUGIN_COMMAND = ''
 
-    def run(self, argv):
+    def run(self, arguments):
         """
         Main plugin function called when a command is received
         Returns a response dictionary containing two fields:
@@ -28,3 +28,14 @@ class Plugin:
             'content': the message to send as a response
         """
         pass
+
+    def accept(self, arguments):
+        """
+        For passive plugins to choose if they want the message to
+        be processed by other commands.
+        Returns (status, response) status is true no other plugins
+        should be consulted otherwise continue asking plugins.
+        Response the same an in self.run
+        """
+        return False, None
+

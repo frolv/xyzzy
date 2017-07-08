@@ -17,6 +17,7 @@
 #
 
 from xyzzy.plugin import Plugin
+from xyzzy.arguments import Arguments
 
 INTERJECTION_TEXT = \
 """I'd just like to interject for a moment. What you're referring to as Linux,
@@ -40,7 +41,7 @@ distributions are really distributions of GNU/Linux."""
 class InterjectPlugin(Plugin):
     PLUGIN_COMMAND = 'interject'
 
-    def run(self, argv):
+    def run(self, arguments):
         return {
             'type': 'text',
             'content': INTERJECTION_TEXT

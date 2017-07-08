@@ -20,11 +20,12 @@ class Arguments:
     raw = ''
     argv = []
 
-    def __init__(self, raw_input, room=None, event=None):
+    def __init__(self, raw_input, room=None, event=None, matrix_bot=None):
         self.raw = raw_input
         self.argv = self.split_string(raw_input)
         self.room = room
         self.current_event = event
+        self.matrix_bot = matrix_bot
 
     def split_string(self, s):
         argv = []

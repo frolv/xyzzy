@@ -28,6 +28,7 @@ class SedPlugin(Plugin):
         for event in reversed(arguments.room.get_events()):
             if event['sender'] == arguments.current_event['sender']:
                 if flag:
+                    arguments.matrix_bot.redact_message(event, arguments.room)
                     return {
                         'type': 'markdown',
                         'content': '**%s**: %s' % (

@@ -20,6 +20,7 @@ from matrix_client.client import MatrixClient
 from matrix_client.api import MatrixRequestError
 
 from markdown import markdown
+from time import time
 
 from . import plugin
 from . import arguments
@@ -127,7 +128,7 @@ class MatrixBot:
                     trimmed_message = msg
 
                 try:
-                    args = arguments.Arguments(trimmed_message, room, event)
+                    args = arguments.Arguments(trimmed_message, room, event, self)
                 except MatrixBot.UnterminatedQuoteError:
                     room.send_text('error: unterminated quote')
                     return
@@ -145,6 +146,15 @@ class MatrixBot:
                         if status:
                             return
 
+    def redact_message(self, event, room):
+        path = '/rooms/%s/redact/%s/%s' % (
+                room.room_id,
+                event['event_id'],
+                str(room.client.api.txn_id) + str(int(time()) * 1000)
+        )
+
+        content = { 'reason': 'Sed correction' }
+        room.client.api._send('PUT', path, content, {}, {})
 
     class RegistrationError(Exception):
         pass
